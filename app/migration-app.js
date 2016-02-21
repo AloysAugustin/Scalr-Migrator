@@ -126,13 +126,33 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
           error(onError);
       }
 
-      // User farm list handling
-      $scope.getFarmList = function() {
+      // Load the user's farms and the roles it has access to
+      $scope.getFarmsAndRoles = function() {
         makeApiCall('FarmsList', [], 
           function(data, status, headers, config) {
             data = xml2json.parser(data);
             // TODO : Error management
-            $scope.farmList = data["farmslistresponse"]["farmset"]["item"];
+            $scope.farmList = data.farmslistresponse.farmset.item;
+            // If there is only one role, item will contain its description, but otherwise item will be a list (xml bug...)
+            if ("id" in $scope.farmList) {
+              $scope.farmList = [$scope.farmList];
+            }
+          }, 
+          function(data, status, headers, config) {
+            // TODO : Error management
+          });
+        makeApiCall('RolesList', [], 
+          function(data, status, headers, config) {
+            data = xml2json.parser(data);
+            // TODO : Error management
+            var allRoles = data.roleslistresponse.roleset.item;
+            if ("id" in allRoles) {
+              allRoles = [allRoles];
+            }
+
+            for (i in allRoles) {
+              $scope.rolesList[allRoles[i].id] = allRoles[i];
+            }
           }, 
           function(data, status, headers, config) {
             // TODO : Error management
@@ -140,13 +160,73 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
       }
 
       $scope.$watch('farmSelected', function(newFarmSelected, oldFarmSelected) {
-        $scope.getPossibleLocations();
+        if ($scope.farmSelected) {
+          $scope.getPossibleLocations();
+        }
       }, true);
 
+      var getRoleLocations = function(roleId) {
+        if (! roleId in $scope.rolesList) return;
+
+        var locations = [];
+        var images = $scope.rolesList[roleId].imageset.item;
+        for (i in images) {
+          locations.push({"platform" : images[i].platform, 
+                          "cloudlocation" : images[i].cloudlocation,
+                          "name" : images[i].platform + " " + images[i].cloudlocation});
+        }
+        return locations;
+      }
+
       $scope.getPossibleLocations = function() {
+        //Fetch the roles in the farm
+        makeApiCall('FarmGetDetails', {"FarmID" : $scope.farmSelected.id}, 
+          function(data, status, headers, config) {
+            data = xml2json.parser(data);
+            // TODO : Error management
+            var farmRoles = data.farmgetdetailsresponse.farmroleset.item;
+            if ("id" in farmRoles) {
+              farmRoles = [farmRoles];
+            }
+
+            var possibleLocations = getRoleLocations(farmRoles[0].roleid);
+            // TODO : Test this
+            for (i = 1; i < farmRoles.length; i ++) {
+              var locations = getRoleLocations(farmRoles[i].roleid);
+              for (j = 0; j < possibleLocations.length; j ++) {
+                //Remove locations that are not possible for this role
+                var found = false;
+                for (k = 0; k < locations.length; k ++) {
+                  if (locations[k].platform == possibleLocations[j].platform &&
+                      locations[k].cloudlocation == possibleLocations[j].cloudlocation) {
+                    found = true;
+                    break;
+                  }
+                }
+                if (! found) {
+                  possibleLocations.splice(j, 1);
+                  j --;
+                }
+              }
+            }
+            $scope.possibleLocations = possibleLocations;
+          }, 
+          function(data, status, headers, config) {
+            // TODO : Error management
+          });
+      }
+
+      $scope.$watch('locationSelected', function(newFarmSelected, oldFarmSelected) {
+        if ($scope.locationSelected) {
+          $scope.prepareMigration();
+        }
+      }, true);
+
+      $scope.prepareMigration = function() {
 
       }
 
-      // Initialization: load API settings from local storage
+      // Initialization
+      $scope.rolesList = {};
       $scope.loadApiSettings();
   }]);
