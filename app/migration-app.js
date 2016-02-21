@@ -130,11 +130,12 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
       $scope.getFarmList = function() {
         makeApiCall('FarmsList', [], 
           function(data, status, headers, config) {
-            alert(data);
-            $scope.farmList = [];
+            data = xml2json.parser(data);
+            // TODO : Error management
+            $scope.farmList = data["farmslistresponse"]["farmset"]["item"];
           }, 
           function(data, status, headers, config) {
-
+            // TODO : Error management
           });
       }
 
