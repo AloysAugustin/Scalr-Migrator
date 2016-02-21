@@ -6,7 +6,7 @@
   <meta charset="UTF-8">
   <title>Scalr Farm Migrator</title>
   <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
-  <link type="image/x-icon" href="/static/favicon.ico" rel="shortcut icon" />
+  <link type="image/x-icon" href="static/favicon.ico" rel="shortcut icon" />
   <style>
     .nav, .pagination, .carousel, .panel-title a { cursor: pointer; }
     .nav.nav-tabs { padding-bottom: 15px; }
@@ -111,7 +111,7 @@
             <div class="form-group">
               <label class="col-sm-2 control-label">Farm to migrate:</label>
               <div class="col-sm-10">
-                <select class="form-control" ng-model="farmSelected" ng-required="true" ng-options="value.name for value in farmList | orderBy:'name'">
+                <select class="form-control" ng-model="farmSelected" ng-required="true" ng-options="value as value.name for value in farmList | orderBy:'value.name'">
                   <option value="">--- Available farms ---</option>
                 </select>
               </div>
