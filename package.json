@@ -1,0 +1,13 @@
+{
+  "name": "migration-app",
+  "private": true,
+  "version": "0.0.1",
+  "description": "An app to migrate Scalr farms",
+  "devDependencies": {
+    "http-server": "^0.6.1"
+  },
+  "scripts": {
+    "prestart": "npm install",
+    "start": "http-server -a localhost -p 8000 -c-1"
+  }
+}

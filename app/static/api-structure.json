@@ -1,0 +1,845 @@
+[
+    {
+        "name": "FireCustomEvent",
+        "params": [
+            {
+                "name": "ServerID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "EventName",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "Params",
+                "required": false,
+                "array": true
+            }
+        ]
+    },
+    {
+        "name": "FarmGetDetails",
+        "params": [
+            {
+                "name": "FarmID",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "FarmGetDnsEndpoints",
+        "params": [
+            {
+                "name": "FarmID",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "FarmUpdateRole",
+        "params": [
+            {
+                "name": "FarmRoleID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "Alias",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "Configuration",
+                "required": false,
+                "array": true
+            }
+        ]
+    },
+    {
+        "name": "FarmAddRole",
+        "params": [
+            {
+                "name": "Alias",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "FarmID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "RoleID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "Platform",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "CloudLocation",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "Configuration",
+                "required": false,
+                "array": true
+            }
+        ]
+    },
+    {
+        "name": "FarmRemoveRole",
+        "params": [
+            {
+                "name": "FarmID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "FarmRoleID",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "FarmRemove",
+        "params": [
+            {
+                "name": "FarmID",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "FarmCreate",
+        "params": [
+            {
+                "name": "Name",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "Description",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "ProjectID",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "Configuration",
+                "required": false,
+                "array": true
+            }
+        ]
+    },
+    {
+        "name": "FarmClone",
+        "params": [
+            {
+                "name": "FarmID",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "ScriptingLogsList",
+        "params": [
+            {
+                "name": "FarmID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "ServerID",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "EventID",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "StartFrom",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "RecordsLimit",
+                "required": false,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "FarmRoleParametersList",
+        "params": [
+            {
+                "name": "FarmRoleID",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "FarmRoleUpdateParameterValue",
+        "params": [
+            {
+                "name": "FarmRoleID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "ParamName",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "ParamValue",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "EnvironmentsList",
+        "params": []
+    },
+    {
+        "name": "ServerGetExtendedInformation",
+        "params": [
+            {
+                "name": "ServerID",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "GlobalVariableSet",
+        "params": [
+            {
+                "name": "ParamName",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "ParamValue",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "FarmRoleID",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "FarmID",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "ServerID",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "RoleID",
+                "required": false,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "GlobalVariablesList",
+        "params": [
+            {
+                "name": "ServerID",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "FarmID",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "FarmRoleID",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "RoleID",
+                "required": false,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "DmSourcesList",
+        "params": []
+    },
+    {
+        "name": "DmSourceCreate",
+        "params": [
+            {
+                "name": "Type",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "URL",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "AuthLogin",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "AuthPassword",
+                "required": false,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "DmApplicationCreate",
+        "params": [
+            {
+                "name": "Name",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "SourceID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "PreDeployScript",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "PostDeployScript",
+                "required": false,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "DmApplicationsList",
+        "params": []
+    },
+    {
+        "name": "DmDeploymentTasksList",
+        "params": [
+            {
+                "name": "FarmRoleID",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "ApplicationID",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "ServerID",
+                "required": false,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "DmDeploymentTaskGetLog",
+        "params": [
+            {
+                "name": "DeploymentTaskID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "StartFrom",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "RecordsLimit",
+                "required": false,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "DmDeploymentTaskGetStatus",
+        "params": [
+            {
+                "name": "DeploymentTaskID",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "DmApplicationDeploy",
+        "params": [
+            {
+                "name": "ApplicationID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "FarmRoleID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "RemotePath",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "FarmsList",
+        "params": []
+    },
+    {
+        "name": "ApacheVhostCreate",
+        "params": [
+            {
+                "name": "DomainName",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "FarmID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "FarmRoleID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "DocumentRootDir",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "EnableSSL",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "SSLPrivateKey",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "SSLCertificate",
+                "required": false,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "ApacheVhostsList",
+        "params": []
+    },
+    {
+        "name": "DNSZonesList",
+        "params": []
+    },
+    {
+        "name": "DNSZoneRecordAdd",
+        "params": [
+            {
+                "name": "ZoneName",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "Type",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "TTL",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "Name",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "Value",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "Priority",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "Weight",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "Port",
+                "required": false,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "DNSZoneRecordRemove",
+        "params": [
+            {
+                "name": "ZoneName",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "RecordID",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "DNSZoneRecordsList",
+        "params": [
+            {
+                "name": "ZoneName",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "DNSZoneCreate",
+        "params": [
+            {
+                "name": "DomainName",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "FarmID",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "FarmRoleID",
+                "required": false,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "FarmTerminate",
+        "params": [
+            {
+                "name": "FarmID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "KeepEBS",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "KeepEIP",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "KeepDNSZone",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "FarmLaunch",
+        "params": [
+            {
+                "name": "FarmID",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "FarmGetStats",
+        "params": [
+            {
+                "name": "FarmID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "Date",
+                "required": false,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "EventsList",
+        "params": [
+            {
+                "name": "FarmID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "StartFrom",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "RecordsLimit",
+                "required": false,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "LogsList",
+        "params": [
+            {
+                "name": "FarmID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "ServerID",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "StartFrom",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "RecordsLimit",
+                "required": false,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "ScriptGetDetails",
+        "params": [
+            {
+                "name": "ScriptID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "ShowContent",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "Revision",
+                "required": false,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "ScriptExecute",
+        "params": [
+            {
+                "name": "ScriptID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "Timeout",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "Async",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "FarmID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "FarmRoleID",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "ServerID",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "Revision",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "ConfigVariables",
+                "required": false,
+                "array": true
+            }
+        ]
+    },
+    {
+        "name": "RolesList",
+        "params": [
+            {
+                "name": "Platform",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "ImageID",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "Name",
+                "required": false,
+                "array": false
+            },
+            {
+                "name": "Prefix",
+                "required": false,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "ScriptsList",
+        "params": []
+    },
+    {
+        "name": "Hello",
+        "params": []
+    },
+    {
+        "name": "StatisticsGetGraphURL",
+        "params": [
+            {
+                "name": "ObjectType",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "ObjectID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "WatcherName",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "GraphType",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "BundleTaskGetStatus",
+        "params": [
+            {
+                "name": "BundleTaskID",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "ServerImageCreate",
+        "params": [
+            {
+                "name": "ServerID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "RoleName",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "ServerReboot",
+        "params": [
+            {
+                "name": "ServerID",
+                "required": true,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "ServerLaunch",
+        "params": [
+            {
+                "name": "FarmRoleID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "IncreaseMaxInstances",
+                "required": false,
+                "array": false
+            }
+        ]
+    },
+    {
+        "name": "ServerTerminate",
+        "params": [
+            {
+                "name": "ServerID",
+                "required": true,
+                "array": false
+            },
+            {
+                "name": "DecreaseMinInstancesSetting",
+                "required": false,
+                "array": false
+            }
+        ]
+    }
+]
+

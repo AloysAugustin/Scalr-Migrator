@@ -1,0 +1,421 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Scalr API Explorer</title>
+  <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+  <link type="image/x-icon" href="/static/favicon.ico" rel="shortcut icon" />
+  <style>
+    .nav, .pagination, .carousel, .panel-title a { cursor: pointer; }
+    .nav.nav-tabs { padding-bottom: 15px; }
+  </style>
+</head>
+
+<body ng-app="ScalrAPIExplorer">
+  <div class="container">
+    <div class="page-header">
+      <h1>Scalr API Explorer</h1>
+      <p>Use this app to explore the Scalr API.</p>
+      <p>This app is exclusively client-side. All requests are directly sent from your workstation to the Scalr API.</p>
+    </div>
+
+    <div class="container" ng-controller="APIRequestForm">
+        <div class="row">
+          <h2>API Structure</h2>
+          <p>Status: <span class="label label-{{ apiStructureStatus.label }}">{{ apiStructureStatus.status }}</span></p>
+          <button class="btn btn-default" ng-click="loadApiStructure()">Reload API Structure</button>
+        </div>
+
+
+
+        <div class="row">
+
+          <h2>API Settings</h2>
+
+          <div class="alert alert-warning" role="alert" ng-show="isHttps && apiSettingsForm.apiUrl.$valid && apiSettings.apiUrl.indexOf('https') != 0">
+            <p>
+              <strong><span class="glyphicon glyphicon-warning-sign"></span> Heads up!</strong>
+              You are currently accessing the API Explorer over HTTPS, but your API endpoint is served over HTTP.
+              This may trigger a <a href="https://developer.mozilla.org/en-US/docs/Security/MixedContent">mixed content alert</a> in your browser.
+            </p>
+            <p>
+              <strong>Don't panic, the API Explorer can still work,</strong> provided you allow mixed content first.
+            </p>
+            <p>
+              To do so, make a "Hello" API Call. Your browser will show a warning; it's a shield icon next to the URL bar.
+              Click it, and allow mixed content. Most browsers will reload the page, so make sure you save your API settings first.
+            </p>
+
+          </div>
+
+          <form name="apiSettingsForm" class="form-horizontal" role="form" novalidate>
+            <div class="form-group" ng-class="{'has-error': apiSettingsForm.apiUrl.$invalid}">
+              <label class="col-sm-2 control-label">API URL</label>
+              <div class="col-sm-10">
+                <input class="form-control" type="url" name="apiUrl" ng-model="apiSettings.apiUrl" ng-required="true" />
+              </div>
+            </div>
+
+            <tabset justified="true">
+
+              <tab heading="Use API Key Auth" active="tabs.key.active">
+                <div class="form-group" ng-class="{'has-error': apiSettingsForm.keyId.$invalid}">
+                  <label class="col-sm-2 control-label">API Key ID</label>
+                  <div class="col-sm-10">
+                    <input class="form-control" type="text" name="keyId" ng-model="apiSettings.keyId" ng-required="equals(apiSettings.authType, 'key')" />
+                  </div>
+                </div>
+
+                <div  class="form-group">
+                  <label class="col-sm-2 control-label">API Secret Key</label>
+                  <div class="col-sm-10" ng-class="{'has-error': apiSettingsForm.secretKey.$invalid}">
+                    <input class="form-control" type="password" name="secretKey" ng-model="apiSettings.secretKey" ng-required="equals(apiSettings.authType, 'key')" />
+                  </div>
+                </div>
+              </tab>
+
+              <tab heading="Use LDAP Auth" active="tabs.ldap.active">
+                <div  class="form-group">
+                  <label class="col-sm-2 control-label">LDAP Username</label>
+                  <div class="col-sm-10" ng-class="{'has-error': apiSettingsForm.ldapUsername.$invalid}">
+                    <input class="form-control" type="text" name="ldapUsername" ng-model="apiSettings.ldapUsername" ng-required="equals(apiSettings.authType, 'ldap')" />
+                  </div>
+                </div>
+
+                <div  class="form-group">
+                  <label class="col-sm-2 control-label">LDAP Password</label>
+                  <div class="col-sm-10" ng-class="{'has-error': apiSettingsForm.ldapPassword.$invalid}">
+                    <input class="form-control" type="password" name="ldapPassword" ng-model="apiSettings.ldapPassword" ng-required="equals(apiSettings.authType, 'ldap')" />
+                  </div>
+                </div>
+              </tab>
+
+            </tabset>
+
+            <div  class="form-group">
+              <label class="col-sm-2 control-label">Environment ID</label>
+              <div class="col-sm-10" ng-class="{'has-error': apiSettingsForm.envId.$invalid}">
+                <input class="form-control" type="text" name="envId" ng-model="apiSettings.envId" ng-required="equals(apiSettings.authType, 'ldap')" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="col-sm-offset-2 col-sm-10">
+                <!-- TODO: Actually check API settings against what is saved! -->
+                <button class="btn btn-default" ng-disabled="equals(storedApiSettings, apiSettings)" ng-click="saveApiSettings()">Locally Save API Settings</button>
+                <button class="btn btn-danger" ng-disabled="equals(storedApiSettings, defaultApiSettings)" ng-click="clearApiSettings()">Clear Saved API Settings</button>
+              </div>
+            </div>
+          </form>
+
+        </div>
+
+        <div class="row">
+          <h2>API Call</h2>
+          <form name="apiCallForm" class="form-horizontal">
+            <div class="form-group">
+              <label class="col-sm-2 control-label">API Call</label>
+              <div class="col-sm-10">
+                <select class="form-control" ng-model="apiCall" ng-required="true" ng-options="value.name for value in apiCalls | orderBy:'name'">
+                  <option value="">--- Choose API Call ---</option>
+                </select>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="row">
+          <h2>API Parameters</h2>
+
+
+          <form name="apiParametersForm" class="form-horizontal" novalidate>
+
+            <div ng-show="apiCall">
+              <p ng-show="apiCall.params.length">
+                Need Help? Visit the
+                <a target="_blank" href="{{ getDocumentationURL(apiCall) }}">{{ apiCall.name }}</a>
+                documentation (opens in a new tab).
+              </p>
+              <p ng-hide="apiCall.params.length">This API Call takes no parameters</p>
+            </div>
+
+            <div class="form-group" ng-repeat="param in apiCall.params">
+                <label class="col-sm-2 control-label">{{param.name}} <span ng-show="param.required">*</span></label>
+
+                <div class="col-sm-10" ng-switch="param.array">
+                    <input ng-switch-when="false" class="form-control" type="text" ng-model="apiParams[param.name]" ng-required="param.required" />
+
+                    <div ng-switch-when="true">
+                      <div ng-repeat="i in range(getArrayParamLength(param.name)) track by $index">
+
+                        <div class="row form-inline">
+                          <label class="col-xs-2" class="control-label">Key</label>
+                          <input class="col-xs-4 form-control" type="text" ng-model="apiParams[param.name][$index].key"/>
+
+                          <label class="col-xs-2" class="control-label">Value</label>
+                          <input class="col-xs-4 form-control" type="text" ng-model="apiParams[param.name][$index].value"/>
+                        </div>
+
+                      </div>
+
+                      <div>
+                        <button class="btn btn-default" ng-click="addArrayParam(param.name)">Add parameter</button>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+              <div class="col-sm-offset-2 col-sm-10">
+                <button class="btn btn-success"
+                  ng-disabled="!apiCallForm.$valid || !apiParametersForm.$valid || !apiSettingsForm.$valid"
+                  ng-click="makeApiCall()"
+                >Call {{ apiCall.name }}</button>
+                <button class="btn btn-danger" ng-disabled="!apiCallForm.$valid" ng-click="resetParams()">Reset form</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="row">
+          <h2>API Response</h2>
+          <p ng-hide="lastResponse.message">Status: No API response yet</p>
+          <p ng-show="lastResponse.message">Status: {{ lastResponse.message }}</p>
+          <p ng-show="lastResponse.status">HTTP Status: <code>{{ lastResponse.status }}</code></p>
+
+          <pre ng-show="lastResponse.body">{{ lastResponse.body }}</pre>
+        </div>
+
+    </div>
+  </div>
+
+  <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.min.js"></script>
+  <script src="static/angular-local-storage.min.js"></script>
+  <script src="static/ui-bootstrap-tpls-0.11.0.min.js"></script>
+  <script src="static/sjcl.js"></script>
+  <script src="static/vkbeautify.js"></script>
+
+  <script>
+
+  var app = angular.module('ScalrAPIExplorer', ["LocalStorageModule", "ui.bootstrap"]);
+
+  app.controller('APIRequestForm', ["$scope", "$location", "$http", "$filter", "localStorageService", function ($scope, $location, $http, $filter, localStorageService) {
+      // Constants
+      var documentationRootURL = "https://scalr-wiki.atlassian.net/wiki/display/docs";
+
+      // Utilities
+      $scope.range = function(n) {
+        return new Array(n);
+      };
+
+      $scope.equals = angular.equals;
+      $scope.isHttps = $location.protocol() === "https";
+
+      $scope.getDocumentationURL = function (apiCall) {
+        return [documentationRootURL, apiCall.name].join("/");
+      };
+
+      // UI Handling
+      $scope.tabs = {
+        "key":  { "active": true}, // Default tab
+        "ldap": {"active": false}
+      }
+
+      // API Settings handling
+      $scope.defaultApiSettings = {"apiUrl": "https://api.scalr.net/"};
+
+      $scope.apiSettings = {};
+      $scope.storedApiSettings = null;
+
+      $scope.loadApiSettings = function () {
+        var storedApiSettings = angular.fromJson(localStorageService.get('apiSettings'));
+        $scope.storedApiSettings = storedApiSettings === null ? $scope.defaultApiSettings : storedApiSettings;
+        $scope.apiSettings = angular.copy($scope.storedApiSettings);
+
+        // Backwards compatibility (user with no authType)
+        if (angular.isUndefined($scope.apiSettings.authType)) $scope.apiSettings.authType = 'key';
+
+        // Tabs are initialized only when loading
+        if ($scope.apiSettings.authType === 'key') $scope.tabs.key.active = true;
+        if ($scope.apiSettings.authType === 'ldap') $scope.tabs.ldap.active = true;
+      }
+
+      $scope.saveApiSettings = function () {
+        $scope.storedApiSettings = angular.copy($scope.apiSettings);
+      }
+
+      $scope.clearApiSettings = function () {
+        $scope.storedApiSettings = angular.copy($scope.defaultApiSettings);
+      }
+
+      $scope.$watch('storedApiSettings', function (newSettings, oldSettings) {
+        if (newSettings === oldSettings) return;  // Same object --> initialization.
+        localStorageService.set('apiSettings', angular.toJson(newSettings));
+      }, true);
+
+      $scope.$watch('tabs', function (newTabConfig, oldTabConfig) {
+          if (newTabConfig === oldTabConfig) return;  // See above
+          var authType;
+
+          if (newTabConfig.key.active) authType = "key";
+          if (newTabConfig.ldap.active) authType = "ldap";
+
+          $scope.apiSettings.authType = authType;
+      }, true);
+
+
+      // API Call handling
+
+      $scope.apiCalls = []
+      $scope.apiCall = null;
+
+      $scope.$watch('apiCall', function (newApiCall, oldApiCall) {
+        $scope.resetParams();
+      });
+
+      $scope.apiParams = {};
+
+      $scope.lastResponse = {};
+
+
+      $scope.resetParams = function () {
+        $scope.apiParams = {};
+      }
+
+      $scope.getArrayParamLength = function (paramName) {
+        if (angular.isUndefined($scope.apiParams[paramName]))
+          return 0;
+        return $scope.apiParams[paramName].length;
+      }
+
+      $scope.addArrayParam = function (paramName) {
+        if (angular.isUndefined($scope.apiParams[paramName]))
+          $scope.apiParams[paramName] = new Array();
+
+        $scope.apiParams[paramName].push({});
+      }
+
+
+      var getKeyAuthParams = function (timestamp) {
+        var token = [$scope.apiCall.name, $scope.apiSettings.keyId, timestamp].join(":");
+        var hmac = new sjcl.misc.hmac($scope.apiSettings.secretKey);
+        var signature = sjcl.codec.base64.fromBits(hmac.encrypt(token));
+
+        return {
+          "AuthVersion": "3",
+          "KeyID": $scope.apiSettings.keyId,
+          "Signature": signature
+        }
+      }
+
+      var getLDAPAuthParams = function (timestamp) {
+        return {
+          "AuthType": $scope.apiSettings.authType,
+          "Login": $scope.apiSettings.ldapUsername,
+          "Password": $scope.apiSettings.ldapPassword
+        }
+      }
+
+      var authFunctions = {
+        "key": getKeyAuthParams,
+        "ldap": getLDAPAuthParams
+      }
+
+      var getAuthParams = function () {
+        var localTime = new Date();
+        var utcTime = new Date(localTime.getUTCFullYear(), localTime.getUTCMonth(), localTime.getUTCDate(),
+                                localTime.getUTCHours(), localTime.getUTCMinutes(), localTime.getUTCSeconds());
+        var timestamp = $filter("date")(utcTime, "yyyy-MM-dd HH:mm:ss");
+
+        var authParams = {
+          "Timestamp": timestamp
+        }
+
+        var authFunction = authFunctions[$scope.apiSettings.authType];
+        if (authFunction) {
+          angular.extend(authParams, authFunction(timestamp));
+        } else {
+          console.log("Warning: no auth function found for auth type: '%s'", $scope.apiSettings.authType);
+        }
+
+        return authParams;
+      }
+
+      $scope.makeApiCall = function () {
+        // TODO -> Check required params!
+
+        var params = {
+          "Version": "2.3.0",
+          "Action": $scope.apiCall.name
+        }
+
+        if ($scope.apiSettings.envId !== '') {
+          params["EnvID"] = $scope.apiSettings.envId;
+        }
+
+        angular.extend(params, getAuthParams());
+
+        for (var key in $scope.apiParams) {
+          // TODO --> Arrays
+          var value = $scope.apiParams[key]
+          if (value instanceof Array) {
+            for (var i = 0; i < value.length; i++) {
+              var subParam = value[i];
+              params[key + "[" + encodeURIComponent(subParam.key) + "]"] = subParam.value;
+            }
+          } else {
+            params[key] = value;
+          }
+        }
+
+        $scope.lastResponse = {"message": "API Call In Progress"};
+
+        $http({
+          "method": "GET",
+          "url": $scope.apiSettings.apiUrl,
+          "params": params
+        }).
+          success(function(data, status, headers, config) {
+            $scope.lastResponse.message = "API Call Succeeded";
+            $scope.lastResponse.status = status;
+            $scope.lastResponse.body = vkbeautify.xml(data);
+          }).
+          error(function(data, status, headers, config) {
+            $scope.lastResponse.message = "An error occured";
+            $scope.lastResponse.status = status;
+            $scope.lastResponse.body = data;
+          });
+      }
+
+      $scope.apiSturctureUrl = "static/api-structure.json";
+      $scope.apiStructureStatus = {
+        "status": "Starting",
+        "label": "default"
+      };
+
+      $scope.loadApiStructure = function () {
+        $scope.apiStructureStatus.status = "Loading";
+        $scope.apiStructureStatus.label = "warning";
+
+        $http.get($scope.apiSturctureUrl).
+          success(function(data, status, headers, config) {
+            $scope.apiCalls = data;
+
+            $scope.apiStructureStatus.status = "Ready";
+            $scope.apiStructureStatus.label = "success";
+          }).
+          error(function(data, status, headers, config) {
+            $scope.apiStructureStatus.status = "Error";
+            $scope.apiStructureStatus.label = "danger";
+          });
+      }
+
+      // Initialization. Load API settings from local storage, and load API structure
+      $scope.loadApiSettings();
+      $scope.loadApiStructure();
+  }]);
+  </script>
+</body>
+</html>
