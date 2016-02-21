@@ -1,9 +1,6 @@
-var app = angular.module('ScalrAPIExplorer', ["LocalStorageModule", "ui.bootstrap"]);
+var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstrap"]);
 
   app.controller('APIRequestForm', ["$scope", "$location", "$http", "$filter", "localStorageService", function ($scope, $location, $http, $filter, localStorageService) {
-      // Constants
-      var documentationRootURL = "https://scalr-wiki.atlassian.net/wiki/display/docs";
-
       // Utilities
       $scope.range = function(n) {
         return new Array(n);
@@ -11,10 +8,6 @@ var app = angular.module('ScalrAPIExplorer', ["LocalStorageModule", "ui.bootstra
 
       $scope.equals = angular.equals;
       $scope.isHttps = $location.protocol() === "https";
-
-      $scope.getDocumentationURL = function (apiCall) {
-        return [documentationRootURL, apiCall.name].join("/");
-      };
 
       // UI Handling
       $scope.tabs = {
@@ -65,40 +58,9 @@ var app = angular.module('ScalrAPIExplorer', ["LocalStorageModule", "ui.bootstra
       }, true);
 
 
-      // API Call handling
-
-      $scope.apiCalls = []
-      $scope.apiCall = null;
-
-      $scope.$watch('apiCall', function (newApiCall, oldApiCall) {
-        $scope.resetParams();
-      });
-
-      $scope.apiParams = {};
-
-      $scope.lastResponse = {};
-
-
-      $scope.resetParams = function () {
-        $scope.apiParams = {};
-      }
-
-      $scope.getArrayParamLength = function (paramName) {
-        if (angular.isUndefined($scope.apiParams[paramName]))
-          return 0;
-        return $scope.apiParams[paramName].length;
-      }
-
-      $scope.addArrayParam = function (paramName) {
-        if (angular.isUndefined($scope.apiParams[paramName]))
-          $scope.apiParams[paramName] = new Array();
-
-        $scope.apiParams[paramName].push({});
-      }
-
-
-      var getKeyAuthParams = function (timestamp) {
-        var token = [$scope.apiCall.name, $scope.apiSettings.keyId, timestamp].join(":");
+      // API Call utilities
+      var getKeyAuthParams = function (timestamp, apiName) {
+        var token = [apiName, $scope.apiSettings.keyId, timestamp].join(":");
         var hmac = new sjcl.misc.hmac($scope.apiSettings.secretKey);
         var signature = sjcl.codec.base64.fromBits(hmac.encrypt(token));
 
@@ -122,7 +84,7 @@ var app = angular.module('ScalrAPIExplorer', ["LocalStorageModule", "ui.bootstra
         "ldap": getLDAPAuthParams
       }
 
-      var getAuthParams = function () {
+      var getAuthParams = function (apiName) {
         var localTime = new Date();
         var utcTime = new Date(localTime.getUTCFullYear(), localTime.getUTCMonth(), localTime.getUTCDate(),
                                 localTime.getUTCHours(), localTime.getUTCMinutes(), localTime.getUTCSeconds());
@@ -134,7 +96,7 @@ var app = angular.module('ScalrAPIExplorer', ["LocalStorageModule", "ui.bootstra
 
         var authFunction = authFunctions[$scope.apiSettings.authType];
         if (authFunction) {
-          angular.extend(authParams, authFunction(timestamp));
+          angular.extend(authParams, authFunction(timestamp, apiName));
         } else {
           console.log("Warning: no auth function found for auth type: '%s'", $scope.apiSettings.authType);
         }
@@ -142,76 +104,48 @@ var app = angular.module('ScalrAPIExplorer', ["LocalStorageModule", "ui.bootstra
         return authParams;
       }
 
-      $scope.makeApiCall = function () {
-        // TODO -> Check required params!
-
+      var makeApiCall = function (apiName, apiParams, onSuccess, onError) {
         var params = {
           "Version": "2.3.0",
-          "Action": $scope.apiCall.name
+          "Action": apiName
         }
 
         if ($scope.apiSettings.envId !== '') {
           params["EnvID"] = $scope.apiSettings.envId;
         }
 
-        angular.extend(params, getAuthParams());
-
-        for (var key in $scope.apiParams) {
-          // TODO --> Arrays
-          var value = $scope.apiParams[key]
-          if (value instanceof Array) {
-            for (var i = 0; i < value.length; i++) {
-              var subParam = value[i];
-              params[key + "[" + encodeURIComponent(subParam.key) + "]"] = subParam.value;
-            }
-          } else {
-            params[key] = value;
-          }
-        }
-
-        $scope.lastResponse = {"message": "API Call In Progress"};
+        angular.extend(params, getAuthParams(apiName));
+        angular.extend(params, apiParams);
 
         $http({
           "method": "GET",
           "url": $scope.apiSettings.apiUrl,
           "params": params
         }).
-          success(function(data, status, headers, config) {
-            $scope.lastResponse.message = "API Call Succeeded";
-            $scope.lastResponse.status = status;
-            $scope.lastResponse.body = vkbeautify.xml(data);
-          }).
-          error(function(data, status, headers, config) {
-            $scope.lastResponse.message = "An error occured";
-            $scope.lastResponse.status = status;
-            $scope.lastResponse.body = data;
+          success(onSuccess).
+          error(onError);
+      }
+
+      // User farm list handling
+      $scope.getFarmList = function() {
+        makeApiCall('FarmsList', [], 
+          function(data, status, headers, config) {
+            alert(data);
+            $scope.farmList = [];
+          }, 
+          function(data, status, headers, config) {
+
           });
       }
 
-      $scope.apiSturctureUrl = "static/api-structure.json";
-      $scope.apiStructureStatus = {
-        "status": "Starting",
-        "label": "default"
-      };
+      $scope.$watch('farmSelected', function(newFarmSelected, oldFarmSelected) {
+        $scope.getPossibleLocations();
+      }, true);
 
-      $scope.loadApiStructure = function () {
-        $scope.apiStructureStatus.status = "Loading";
-        $scope.apiStructureStatus.label = "warning";
+      $scope.getPossibleLocations = function() {
 
-        $http.get($scope.apiSturctureUrl).
-          success(function(data, status, headers, config) {
-            $scope.apiCalls = data;
-
-            $scope.apiStructureStatus.status = "Ready";
-            $scope.apiStructureStatus.label = "success";
-          }).
-          error(function(data, status, headers, config) {
-            $scope.apiStructureStatus.status = "Error";
-            $scope.apiStructureStatus.label = "danger";
-          });
       }
 
-      // Initialization. Load API settings from local storage, and load API structure
+      // Initialization: load API settings from local storage
       $scope.loadApiSettings();
-      $scope.loadApiStructure();
   }]);

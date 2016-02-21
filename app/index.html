@@ -4,7 +4,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Scalr API Explorer</title>
+  <title>Scalr Farm Migrator</title>
   <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
   <link type="image/x-icon" href="/static/favicon.ico" rel="shortcut icon" />
   <style>
@@ -13,23 +13,15 @@
   </style>
 </head>
 
-<body ng-app="ScalrAPIExplorer">
+<body ng-app="ScalrFarmMigrator">
   <div class="container">
     <div class="page-header">
-      <h1>Scalr API Explorer</h1>
-      <p>Use this app to explore the Scalr API.</p>
+      <h1>Scalr Farm Migrator</h1>
+      <p>This app allows you to migrate your apps from one cloud to another, or to another location in the same cloud.</p>
       <p>This app is exclusively client-side. All requests are directly sent from your workstation to the Scalr API.</p>
     </div>
 
     <div class="container" ng-controller="APIRequestForm">
-        <div class="row">
-          <h2>API Structure</h2>
-          <p>Status: <span class="label label-{{ apiStructureStatus.label }}">{{ apiStructureStatus.status }}</span></p>
-          <button class="btn btn-default" ng-click="loadApiStructure()">Reload API Structure</button>
-        </div>
-
-
-
         <div class="row">
 
           <h2>API Settings</h2>
@@ -104,6 +96,7 @@
             <div class="form-group">
               <div class="col-sm-offset-2 col-sm-10">
                 <!-- TODO: Actually check API settings against what is saved! -->
+                <button class="btn btn-success" ng-click="getFarmList()">Fetch Farms list</button>
                 <button class="btn btn-default" ng-disabled="equals(storedApiSettings, apiSettings)" ng-click="saveApiSettings()">Locally Save API Settings</button>
                 <button class="btn btn-danger" ng-disabled="equals(storedApiSettings, defaultApiSettings)" ng-click="clearApiSettings()">Clear Saved API Settings</button>
               </div>
@@ -113,13 +106,13 @@
         </div>
 
         <div class="row">
-          <h2>API Call</h2>
-          <form name="apiCallForm" class="form-horizontal">
+          <h2>Farm selection</h2>
+          <form name="farmSelectForm" class="form-horizontal">
             <div class="form-group">
-              <label class="col-sm-2 control-label">API Call</label>
+              <label class="col-sm-2 control-label">Farm to migrate:</label>
               <div class="col-sm-10">
-                <select class="form-control" ng-model="apiCall" ng-required="true" ng-options="value.name for value in apiCalls | orderBy:'name'">
-                  <option value="">--- Choose API Call ---</option>
+                <select class="form-control" ng-model="farmSelected" ng-required="true" ng-options="value.name for value in farmList | orderBy:'name'">
+                  <option value="">--- Available farms ---</option>
                 </select>
               </div>
             </div>
@@ -127,65 +120,21 @@
         </div>
 
         <div class="row">
-          <h2>API Parameters</h2>
-
-
-          <form name="apiParametersForm" class="form-horizontal" novalidate>
-
-            <div ng-show="apiCall">
-              <p ng-show="apiCall.params.length">
-                Need Help? Visit the
-                <a target="_blank" href="{{ getDocumentationURL(apiCall) }}">{{ apiCall.name }}</a>
-                documentation (opens in a new tab).
-              </p>
-              <p ng-hide="apiCall.params.length">This API Call takes no parameters</p>
-            </div>
-
-            <div class="form-group" ng-repeat="param in apiCall.params">
-                <label class="col-sm-2 control-label">{{param.name}} <span ng-show="param.required">*</span></label>
-
-                <div class="col-sm-10" ng-switch="param.array">
-                    <input ng-switch-when="false" class="form-control" type="text" ng-model="apiParams[param.name]" ng-required="param.required" />
-
-                    <div ng-switch-when="true">
-                      <div ng-repeat="i in range(getArrayParamLength(param.name)) track by $index">
-
-                        <div class="row form-inline">
-                          <label class="col-xs-2" class="control-label">Key</label>
-                          <input class="col-xs-4 form-control" type="text" ng-model="apiParams[param.name][$index].key"/>
-
-                          <label class="col-xs-2" class="control-label">Value</label>
-                          <input class="col-xs-4 form-control" type="text" ng-model="apiParams[param.name][$index].value"/>
-                        </div>
-
-                      </div>
-
-                      <div>
-                        <button class="btn btn-default" ng-click="addArrayParam(param.name)">Add parameter</button>
-                      </div>
-                    </div>
-                </div>
-            </div>
-
+          <h2>Location selection</h2>
+          <form name="locationSelectForm" class="form-horizontal">
             <div class="form-group">
-              <div class="col-sm-offset-2 col-sm-10">
-                <button class="btn btn-success"
-                  ng-disabled="!apiCallForm.$valid || !apiParametersForm.$valid || !apiSettingsForm.$valid"
-                  ng-click="makeApiCall()"
-                >Call {{ apiCall.name }}</button>
-                <button class="btn btn-danger" ng-disabled="!apiCallForm.$valid" ng-click="resetParams()">Reset form</button>
+              <label class="col-sm-2 control-label">Destination:</label>
+              <div class="col-sm-10">
+                <select class="form-control" ng-model="locationSelected" ng-required="true" ng-options="value.name for value in possibleLocations | orderBy:'name'">
+                  <option value="">--- Possible locations ---</option>
+                </select>
               </div>
             </div>
           </form>
         </div>
 
         <div class="row">
-          <h2>API Response</h2>
-          <p ng-hide="lastResponse.message">Status: No API response yet</p>
-          <p ng-show="lastResponse.message">Status: {{ lastResponse.message }}</p>
-          <p ng-show="lastResponse.status">HTTP Status: <code>{{ lastResponse.status }}</code></p>
-
-          <pre ng-show="lastResponse.body">{{ lastResponse.body }}</pre>
+          <h2>Migration summary</h2>
         </div>
 
     </div>
@@ -198,6 +147,6 @@
   <script src="static/vkbeautify.js"></script>
 
   <script src="migration-app.js"></script>
-  
+
 </body>
 </html>
