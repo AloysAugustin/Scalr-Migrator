@@ -133,8 +133,22 @@
           </form>
         </div>
 
-        <div class="row">
+        <div class="row" ng-show="todo">
           <h2>Migration summary</h2>
+          <p>Your existing configuration will be backed up in a farm called <strong>{{backupName}}</strong>.</p>
+          <p>The following changes will be made to the roles in your farm:<p>
+          <ul>
+            <li ng-repeat="role in todo">
+              <strong>{{role.name}}</strong>
+              <ul>
+                <li ng-repeat="(property, values) in role.changes">
+                  {{property}} : {{values.old}} -> {{values.new}}
+                </li>
+              </ul>
+            </li>
+          </ul>
+          <p>If everything looks good, click here:</p>
+          <button class="btn btn-success" ng-click="performMigration()">Migrate</button>
         </div>
 
     </div>

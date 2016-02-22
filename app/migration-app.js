@@ -149,7 +149,7 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
             if ("id" in allRoles) {
               allRoles = [allRoles];
             }
-
+            $scope.rolesList = {};
             for (i in allRoles) {
               $scope.rolesList[allRoles[i].id] = allRoles[i];
             }
@@ -209,6 +209,7 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
                 }
               }
             }
+            $scope.farmRoles = farmRoles;
             $scope.possibleLocations = possibleLocations;
           }, 
           function(data, status, headers, config) {
@@ -223,10 +224,28 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
       }, true);
 
       $scope.prepareMigration = function() {
-
+        $scope.todo = [];
+        $scope.backupName = $scope.farmSelected.name + "-pre-migration-backup";
+        for (i in $scope.farmRoles) {
+          $scope.todo.push({
+            "name" : $scope.farmRoles[i].alias,
+            "roleid" : $scope.farmRoles[i].roleid,
+            "changes" : {
+              "platform" : {
+                "old" : $scope.farmRoles[i].platform,
+                "new" : $scope.locationSelected.platform 
+              },
+              "cloudlocation" : {
+                "old" : $scope.farmRoles[i].cloudlocation,
+                "new" : $scope.locationSelected.cloudlocation
+              }
+            }
+          });
+        }
       }
 
+
+
       // Initialization
-      $scope.rolesList = {};
       $scope.loadApiSettings();
   }]);
