@@ -139,7 +139,7 @@
           <p>The following changes will be made to the roles in your farm:<p>
           <ul>
             <li ng-repeat="role in todo">
-              <strong>{{role.name}}</strong>
+              <strong>{{role.name}}</strong> - Status: {{role.status}}
               <ul>
                 <li ng-repeat="(property, values) in role.changes">
                   {{property}} : {{values.old}} -> {{values.new}}

@@ -115,7 +115,19 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
         }
 
         angular.extend(params, getAuthParams(apiName));
-        angular.extend(params, apiParams);
+        
+        for (var key in apiParams) {
+          // TODO --> Arrays
+          var value = apiParams[key]
+          if (value instanceof Array) {
+            for (var i = 0; i < value.length; i++) {
+              var subParam = value[i];
+              params[key + "[" + encodeURIComponent(subParam.key) + "]"] = subParam.value;
+            }
+          } else {
+            params[key] = value;
+          }
+        }
 
         $http({
           "method": "GET",
@@ -225,17 +237,20 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
 
       $scope.prepareMigration = function() {
         $scope.todo = [];
-        $scope.backupName = $scope.farmSelected.name + "-pre-migration-backup";
+        // I can't find an API to rename the farm, so I put the default clone name here
+        $scope.backupName = $scope.farmSelected.name + " (clone #1)";
         for (i in $scope.farmRoles) {
           $scope.todo.push({
             "name" : $scope.farmRoles[i].alias,
+            "role" : $scope.farmRoles[i],
+            "status" : "(ready)",
             "roleid" : $scope.farmRoles[i].roleid,
             "changes" : {
-              "platform" : {
+              "Platform" : {
                 "old" : $scope.farmRoles[i].platform,
                 "new" : $scope.locationSelected.platform 
               },
-              "cloudlocation" : {
+              "CloudLocation" : {
                 "old" : $scope.farmRoles[i].cloudlocation,
                 "new" : $scope.locationSelected.cloudlocation
               }
@@ -244,7 +259,99 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
         }
       }
 
+      var makeRoleConfig = function(oldRole, location) {
+        // Creates the API parameters to create a copy of oldRole with a different location
+        params = {
+          // Two farm roles can't have the same alias, so "-migration-new" is appended to the new role, and removed later
+          // This may cause name conflicts...
+          "Alias" : oldRole.alias + "-migration-new",
+          "FarmID" : $scope.farmSelected.id,
+          "RoleID" : oldRole.roleid,
+          "Platform" : location.platform,
+          "CloudLocation" : location.cloudlocation,
+          "Configuration" : []
+        };
 
+        // The configuration parameters are platform-dependant
+        paramNames = {
+          "ec2" : {
+            "instancetype" : "aws.instance_type",
+            "availabilityzone" : "aws.availability_zone"
+          }
+        }
+        // We should make the cloud-specific adjustments (machine type, etc.) around here
+        for (i in oldRole.platformProperties) {
+          params.Configuration.push({"key" : paramNames[location.platform][i], "value" : oldRole.platformProperties[i]})
+        }
+        return params;
+      }
+
+      $scope.performMigration = function() {
+        $scope.todo[i].status = "Cloning existing farm...";
+
+        makeApiCall("FarmClone", {"FarmID" : $scope.farmSelected.id},
+          function(data, status, headers, config) {
+            data = xml2json.parser(data);
+            if ("farmid" in data.farmcloneresponse) {
+              // Success, rename the clone? (API?)
+              var cloneId = data.farmcloneresponse.farmid;
+
+              // There is no API to directly change the location of a role, so we copy it and then remove the original
+              for (i in $scope.todo) {
+                $scope.todo[i].status = "Creating migrated role...";
+                var newRoleConfig = makeRoleConfig($scope.todo[i].role, $scope.locationSelected);
+
+                makeApiCall("FarmAddRole", newRoleConfig,
+                  function(data, status, headers, config) {
+                    data = xml2json.parser(data);
+                    if ("farmaddroleresponse" in data) {
+                      $scope.todo[i].status = "New role created, deleting old one...";
+                      newRoleId = data.farmaddroleresponse.farmroleid;
+
+                      makeApiCall("FarmRemoveRole", {"FarmID" : $scope.farmSelected.id, "FarmRoleID" : $scope.todo[i].role.id},
+                        function(data, status, headers, config) {
+                          data = xml2json.parser(data);
+                          if ("farmremoveroleresponse" in data) {
+                            $scope.todo[i].status = "Old role deleted, renaming new one...";
+
+                            makeApiCall("FarmUpdateRole", {"FarmRoleID" : newRoleId, "Alias" : $scope.todo[i].role.alias},
+                              function(data, status, headers, config) {
+                                data = xml2json.parser(data);
+                                if ("farmupdateroleresponse" in data) {
+                                  $scope.todo[i].status = "Success!";
+                                } else {
+                                  $scope.todo[i].status = "Error renaming new role";
+                                }
+                              },
+                              function(data, status, headers, config) {
+                                // TODO Rename role request error
+                              });
+
+                          } else {
+                            $scope.todo[i].status = "Error : couldn't delete old role.";
+                          }                   
+                        },
+                        function(data, status, headers, config) {
+                          // TODO remove role request error
+                        });
+
+                    } else {
+                      $scope.todo[i].status = "Error : couldn't create new role.";
+                    }
+                  },
+                  function(data, status, headers, config) {
+                    // TODO add role request error
+                  });
+
+              }
+            } else {
+              $scope.todo[i].status = "Error: could not clone farm";
+            }
+          },
+          function(data, status, headers, config) {
+            // TODO: Clone request error
+          });
+      }
 
       // Initialization
       $scope.loadApiSettings();
