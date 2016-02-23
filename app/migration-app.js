@@ -115,7 +115,7 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
         }
 
         angular.extend(params, getAuthParams(apiName));
-        
+
         for (var key in apiParams) {
           // TODO --> Arrays
           var value = apiParams[key]
@@ -140,7 +140,7 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
 
       // Load the user's farms and the roles it has access to
       $scope.getFarmsAndRoles = function() {
-        makeApiCall('FarmsList', [], 
+        makeApiCall('FarmsList', [],
           function(data, status, headers, config) {
             data = xml2json.parser(data);
             // TODO : Error management
@@ -149,11 +149,11 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
             if ("id" in $scope.farmList) {
               $scope.farmList = [$scope.farmList];
             }
-          }, 
+          },
           function(data, status, headers, config) {
             // TODO : Error management
           });
-        makeApiCall('RolesList', [], 
+        makeApiCall('RolesList', [],
           function(data, status, headers, config) {
             data = xml2json.parser(data);
             // TODO : Error management
@@ -162,10 +162,10 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
               allRoles = [allRoles];
             }
             $scope.rolesList = {};
-            for (i in allRoles) {
+            for (var i in allRoles) {
               $scope.rolesList[allRoles[i].id] = allRoles[i];
             }
-          }, 
+          },
           function(data, status, headers, config) {
             // TODO : Error management
           });
@@ -182,8 +182,8 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
 
         var locations = [];
         var images = $scope.rolesList[roleId].imageset.item;
-        for (i in images) {
-          locations.push({"platform" : images[i].platform, 
+        for (var i in images) {
+          locations.push({"platform" : images[i].platform,
                           "cloudlocation" : images[i].cloudlocation,
                           "name" : images[i].platform + " " + images[i].cloudlocation});
         }
@@ -192,7 +192,7 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
 
       $scope.getPossibleLocations = function() {
         //Fetch the roles in the farm
-        makeApiCall('FarmGetDetails', {"FarmID" : $scope.farmSelected.id}, 
+        makeApiCall('FarmGetDetails', {"FarmID" : $scope.farmSelected.id},
           function(data, status, headers, config) {
             data = xml2json.parser(data);
             // TODO : Error management
@@ -203,12 +203,12 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
 
             var possibleLocations = getRoleLocations(farmRoles[0].roleid);
             // TODO : Test this
-            for (i = 1; i < farmRoles.length; i ++) {
+            for (var i = 1; i < farmRoles.length; i ++) {
               var locations = getRoleLocations(farmRoles[i].roleid);
-              for (j = 0; j < possibleLocations.length; j ++) {
+              for (var j = 0; j < possibleLocations.length; j ++) {
                 //Remove locations that are not possible for this role
                 var found = false;
-                for (k = 0; k < locations.length; k ++) {
+                for (var k = 0; k < locations.length; k ++) {
                   if (locations[k].platform == possibleLocations[j].platform &&
                       locations[k].cloudlocation == possibleLocations[j].cloudlocation) {
                     found = true;
@@ -223,7 +223,7 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
             }
             $scope.farmRoles = farmRoles;
             $scope.possibleLocations = possibleLocations;
-          }, 
+          },
           function(data, status, headers, config) {
             // TODO : Error management
           });
@@ -239,29 +239,64 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
         $scope.todo = [];
         // I can't find an API to rename the farm, so I put the default clone name here
         $scope.backupName = $scope.farmSelected.name + " (clone #1)";
-        for (i in $scope.farmRoles) {
+        for (var i in $scope.farmRoles) {
+          x = makeRoleConfig($scope.farmRoles[i], $scope.locationSelected);
+          console.log(x);
           $scope.todo.push({
             "name" : $scope.farmRoles[i].alias,
             "role" : $scope.farmRoles[i],
+            "newRole" : x.newRole,
             "status" : "(ready)",
             "roleid" : $scope.farmRoles[i].roleid,
-            "changes" : {
-              "Platform" : {
-                "old" : $scope.farmRoles[i].platform,
-                "new" : $scope.locationSelected.platform 
-              },
-              "CloudLocation" : {
-                "old" : $scope.farmRoles[i].cloudlocation,
-                "new" : $scope.locationSelected.cloudlocation
-              }
-            }
+            "changes" : x.changes
           });
         }
       }
 
+      var platformIndependantParams = {
+        "isscalingenabled" : "scaling.enabled",
+        "scalingproperties.mininstances" : "scaling.min_instances",
+        "scalingproperties.maxinstances" : "scaling.max_instances"
+        /* TODO what are they called in FarmGetDetails?
+        chef.bootstrap
+        chef.server_id
+        chef.environment
+        chef.role_name
+        chef.runlist
+        chef.attributes
+        */
+      };
+
+      var platformDependantParams = {
+        "ec2" : {
+          "platformproperties.instancetype" : "aws.instance_type",
+          "platformproperties.availabilityzone" : "aws.availability_zone"
+          // TODO complete
+        }
+        // TODO openstack, cloudstack, gce
+      };
+
+      var flatten = function(role) {
+        flat = {};
+        for (var i in role) {
+          if (role[i] instanceof Object) {
+            for (var j in role[i]) {
+                flat[i + "." + j] = role[i][j];
+            }
+          } else {
+            flat[i] = role[i];
+          }
+        }
+        return flat;
+      }
+
       var makeRoleConfig = function(oldRole, location) {
-        // Creates the API parameters to create a copy of oldRole with a different location
-        params = {
+        // Creates the API parameters needed to create a copy of oldRole (as returned by the API) with a different location
+        var sameProvider = (oldRole.platform == location.platform);
+
+        oldRole = flatten(oldRole);
+
+        var params = {
           // Two farm roles can't have the same alias, so "-migration-new" is appended to the new role, and removed later
           // This may cause name conflicts...
           "Alias" : oldRole.alias + "-migration-new",
@@ -272,22 +307,42 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
           "Configuration" : []
         };
 
-        // The configuration parameters are platform-dependant
-        paramNames = {
-          "ec2" : {
-            "instancetype" : "aws.instance_type",
-            "availabilityzone" : "aws.availability_zone"
+        var changes = {
+          "CloudLocation" : {
+            "old" : oldRole.cloudlocation,
+            "new" : params.CloudLocation
+          }
+        };
+
+        if (! sameProvider) {
+          changes["Platform"] = {
+            "old" : oldRole.platform,
+            "new" : params.Platform
+          };
+        }
+
+        for (var i in platformIndependantParams) {
+          if (i in oldRole) {
+            params.Configuration.push({"key" : platformIndependantParams[i],
+                                       "value" : oldRole[i]});
           }
         }
-        // We should make the cloud-specific adjustments (machine type, etc.) around here
-        for (i in oldRole.platformProperties) {
-          params.Configuration.push({"key" : paramNames[location.platform][i], "value" : oldRole.platformProperties[i]})
+
+        if (sameProvider) {   // Copy the original params
+          for (var i in platformDependantParams[params.platform]) {
+            if (i in oldRole) {
+              params.Configuration.push({"key" : platformDependantParams[params.platform][i],
+                                         "value" : oldRole[i]});
+            }
+          }
+        } else {    // Adapt the original params, and show what is modified / removed in changes
+          alert("Inter-provider migration not yet supported.");
         }
-        return params;
+        return {"newRole" : params, "changes" : changes};
       }
 
       $scope.performMigration = function() {
-        $scope.todo[i].status = "Cloning existing farm...";
+        $scope.todo[0].status = "Cloning existing farm...";
 
         makeApiCall("FarmClone", {"FarmID" : $scope.farmSelected.id},
           function(data, status, headers, config) {
@@ -297,11 +352,10 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
               var cloneId = data.farmcloneresponse.farmid;
 
               // There is no API to directly change the location of a role, so we copy it and then remove the original
-              for (i in $scope.todo) {
+              for (var i in $scope.todo) {
                 $scope.todo[i].status = "Creating migrated role...";
-                var newRoleConfig = makeRoleConfig($scope.todo[i].role, $scope.locationSelected);
 
-                makeApiCall("FarmAddRole", newRoleConfig,
+                makeApiCall("FarmAddRole", $scope.todo[i].newRole,
                   function(data, status, headers, config) {
                     data = xml2json.parser(data);
                     if ("farmaddroleresponse" in data) {
@@ -329,7 +383,7 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
 
                           } else {
                             $scope.todo[i].status = "Error : couldn't delete old role.";
-                          }                   
+                          }
                         },
                         function(data, status, headers, config) {
                           // TODO remove role request error
