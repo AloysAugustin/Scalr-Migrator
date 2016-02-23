@@ -281,7 +281,12 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
         for (var i in role) {
           if (role[i] instanceof Object) {
             for (var j in role[i]) {
+              // The XML parser yields {} when an item has no value, we eliminate these items
+              if (JSON.stringify(role[i][j]) == "{}") {
+                flat[i + "." + j] = "";
+              } else {
                 flat[i + "." + j] = role[i][j];
+              }
             }
           } else {
             flat[i] = role[i];
@@ -329,9 +334,9 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
         }
 
         if (sameProvider) {   // Copy the original params
-          for (var i in platformDependantParams[params.platform]) {
+          for (var i in platformDependantParams[params.Platform]) {
             if (i in oldRole) {
-              params.Configuration.push({"key" : platformDependantParams[params.platform][i],
+              params.Configuration.push({"key" : platformDependantParams[params.Platform][i],
                                          "value" : oldRole[i]});
             }
           }
