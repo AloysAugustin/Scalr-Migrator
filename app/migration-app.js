@@ -341,6 +341,49 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
         return {"newRole" : params, "changes" : changes};
       }
 
+      var makeOnAddRoleSuccess = function(i) {
+        return function(data, status, headers, config) {
+          data = xml2json.parser(data);
+          if ("farmaddroleresponse" in data) {
+            $scope.todo[i].status = "New role created, deleting old one...";
+            var newRoleId = data.farmaddroleresponse.farmroleid;
+
+            makeApiCall("FarmRemoveRole", {"FarmID" : $scope.farmSelected.id, "FarmRoleID" : $scope.todo[i].role.id},
+              function(data, status, headers, config) {
+                data = xml2json.parser(data);
+                if ("farmremoveroleresponse" in data) {
+                  $scope.todo[i].status = "Old role deleted, renaming new one...";
+
+                  makeApiCall("FarmUpdateRole", {"FarmRoleID" : newRoleId, "Alias" : $scope.todo[i].role.alias},
+                    function(data, status, headers, config) {
+                      data = xml2json.parser(data);
+                      if ("farmupdateroleresponse" in data) {
+                        $scope.todo[i].status = "Success!";
+                      } else {
+                        $scope.todo[i].status = "Error renaming new role";
+                        console.log(i, data);
+                      }
+                    },
+                    function(data, status, headers, config) {
+                      // TODO Rename role request error
+                    });
+
+                } else {
+                  $scope.todo[i].status = "Error : couldn't delete old role.";
+                  console.log(i, data);
+                }
+              },
+              function(data, status, headers, config) {
+                // TODO remove role request error
+              });
+
+          } else {
+            $scope.todo[i].status = "Error : couldn't create new role.";
+            console.log(i, data);
+          }
+        };
+      }
+
       $scope.performMigration = function() {
         $scope.todo[0].status = "Cloning existing farm...";
 
@@ -352,54 +395,19 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
               var cloneId = data.farmcloneresponse.farmid;
 
               // There is no API to directly change the location of a role, so we copy it and then remove the original
-              for (var i in $scope.todo) {
-                $scope.todo[i].status = "Creating migrated role...";
+              for (var idx in $scope.todo) {
+                $scope.todo[idx].status = "Creating migrated role...";
 
-                makeApiCall("FarmAddRole", $scope.todo[i].newRole,
-                  function(data, status, headers, config) {
-                    data = xml2json.parser(data);
-                    if ("farmaddroleresponse" in data) {
-                      $scope.todo[i].status = "New role created, deleting old one...";
-                      newRoleId = data.farmaddroleresponse.farmroleid;
-
-                      makeApiCall("FarmRemoveRole", {"FarmID" : $scope.farmSelected.id, "FarmRoleID" : $scope.todo[i].role.id},
-                        function(data, status, headers, config) {
-                          data = xml2json.parser(data);
-                          if ("farmremoveroleresponse" in data) {
-                            $scope.todo[i].status = "Old role deleted, renaming new one...";
-
-                            makeApiCall("FarmUpdateRole", {"FarmRoleID" : newRoleId, "Alias" : $scope.todo[i].role.alias},
-                              function(data, status, headers, config) {
-                                data = xml2json.parser(data);
-                                if ("farmupdateroleresponse" in data) {
-                                  $scope.todo[i].status = "Success!";
-                                } else {
-                                  $scope.todo[i].status = "Error renaming new role";
-                                }
-                              },
-                              function(data, status, headers, config) {
-                                // TODO Rename role request error
-                              });
-
-                          } else {
-                            $scope.todo[i].status = "Error : couldn't delete old role.";
-                          }
-                        },
-                        function(data, status, headers, config) {
-                          // TODO remove role request error
-                        });
-
-                    } else {
-                      $scope.todo[i].status = "Error : couldn't create new role.";
-                    }
-                  },
+                makeApiCall("FarmAddRole", $scope.todo[idx].newRole,
+                  makeOnAddRoleSuccess(idx),
                   function(data, status, headers, config) {
                     // TODO add role request error
                   });
 
               }
             } else {
-              $scope.todo[i].status = "Error: could not clone farm";
+              $scope.todo[0].status = "Error: could not clone farm";
+              console.log(data);
             }
           },
           function(data, status, headers, config) {
