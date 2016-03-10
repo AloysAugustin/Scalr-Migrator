@@ -52,7 +52,7 @@
 
             <tabset justified="true">
 
-              <tab heading="Use API Key Auth" active="tabs.key.active">
+              <tab heading="Use APIv2 Key Auth" active="tabs.key.active">
                 <div class="form-group" ng-class="{'has-error': apiSettingsForm.keyId.$invalid}">
                   <label class="col-sm-2 control-label">API Key ID</label>
                   <div class="col-sm-10">
@@ -64,22 +64,6 @@
                   <label class="col-sm-2 control-label">API Secret Key</label>
                   <div class="col-sm-10" ng-class="{'has-error': apiSettingsForm.secretKey.$invalid}">
                     <input class="form-control" type="password" name="secretKey" ng-model="apiSettings.secretKey" ng-required="equals(apiSettings.authType, 'key')" />
-                  </div>
-                </div>
-              </tab>
-
-              <tab heading="Use LDAP Auth" active="tabs.ldap.active">
-                <div  class="form-group">
-                  <label class="col-sm-2 control-label">LDAP Username</label>
-                  <div class="col-sm-10" ng-class="{'has-error': apiSettingsForm.ldapUsername.$invalid}">
-                    <input class="form-control" type="text" name="ldapUsername" ng-model="apiSettings.ldapUsername" ng-required="equals(apiSettings.authType, 'ldap')" />
-                  </div>
-                </div>
-
-                <div  class="form-group">
-                  <label class="col-sm-2 control-label">LDAP Password</label>
-                  <div class="col-sm-10" ng-class="{'has-error': apiSettingsForm.ldapPassword.$invalid}">
-                    <input class="form-control" type="password" name="ldapPassword" ng-model="apiSettings.ldapPassword" ng-required="equals(apiSettings.authType, 'ldap')" />
                   </div>
                 </div>
               </tab>

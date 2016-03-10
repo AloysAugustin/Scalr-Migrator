@@ -59,88 +59,68 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
 
 
       // API Call utilities
-      var getKeyAuthParams = function (timestamp, apiName) {
-        var token = [apiName, $scope.apiSettings.keyId, timestamp].join(":");
+      var makeQueryString = function(params) {
+        if (params.length == 0) {
+          return "";
+        }
+        var sorted = [];
+        for(var key in params) {
+          sorted[sorted.length] = key;
+        }
+        sorted.sort();
+        var result = encodeURIComponent(sorted[0]) + '=' + encodeURIComponent(params[sorted[0]]);
+        for (var i = 1; i < sorted.length; i ++) {
+          result += "&" + encodeURIComponent(sorted[i]) + "=" + encodeURIComponent(params[sorted[1]]);
+        }
+        return result;
+      }
+
+      $scope.signatureVersion = "V1-HMAC-SHA256"
+
+      var makeApiHeaders = function(method, date, path, params, body) {
+        var headers = {"X-Scalr-Key-Id": $scope.apiSettings.keyId,
+                       "X-Scalr-Date" : date,
+                       "X-Scalr-Debug" : "1"};
+        var toSign = [method, date, path, params, body].join("\n");
         var hmac = new sjcl.misc.hmac($scope.apiSettings.secretKey);
-        var signature = sjcl.codec.base64.fromBits(hmac.encrypt(token));
-
-        return {
-          "AuthVersion": "3",
-          "KeyID": $scope.apiSettings.keyId,
-          "Signature": signature
-        }
+        var signature = sjcl.codec.base64.fromBits(hmac.encrypt(toSign));
+        headers["X-Scalr-Signature"] = $scope.signatureVersion + " " + signature;
+        return headers;
       }
 
-      var getLDAPAuthParams = function (timestamp) {
-        return {
-          "AuthType": $scope.apiSettings.authType,
-          "Login": $scope.apiSettings.ldapUsername,
-          "Password": $scope.apiSettings.ldapPassword
+      var makeApiCall = function (method, path, params, body, onSuccess, onError) {
+        var queryString = makeQueryString(params);
+        console.log(queryString);
+        var timestamp = new Date().toISOString();
+        console.log(timestamp);
+        var fullPath = $scope.apiSettings.apiUrl;
+        if (fullPath.endsWith("/")) {
+          fullPath = fullPath.substring(0, fullPath.length - 1);
         }
-      }
-
-      var authFunctions = {
-        "key": getKeyAuthParams,
-        "ldap": getLDAPAuthParams
-      }
-
-      var getAuthParams = function (apiName) {
-        var localTime = new Date();
-        var utcTime = new Date(localTime.getUTCFullYear(), localTime.getUTCMonth(), localTime.getUTCDate(),
-                                localTime.getUTCHours(), localTime.getUTCMinutes(), localTime.getUTCSeconds());
-        var timestamp = $filter("date")(utcTime, "yyyy-MM-dd HH:mm:ss");
-
-        var authParams = {
-          "Timestamp": timestamp
-        }
-
-        var authFunction = authFunctions[$scope.apiSettings.authType];
-        if (authFunction) {
-          angular.extend(authParams, authFunction(timestamp, apiName));
-        } else {
-          console.log("Warning: no auth function found for auth type: '%s'", $scope.apiSettings.authType);
-        }
-
-        return authParams;
-      }
-
-      var makeApiCall = function (apiName, apiParams, onSuccess, onError) {
-        var params = {
-          "Version": "2.3.0",
-          "Action": apiName
-        }
-
-        if ($scope.apiSettings.envId !== '') {
-          params["EnvID"] = $scope.apiSettings.envId;
-        }
-
-        angular.extend(params, getAuthParams(apiName));
-
-        for (var key in apiParams) {
-          // TODO --> Arrays
-          var value = apiParams[key]
-          if (value instanceof Array) {
-            for (var i = 0; i < value.length; i++) {
-              var subParam = value[i];
-              params[key + "[" + encodeURIComponent(subParam.key) + "]"] = subParam.value;
-            }
-          } else {
-            params[key] = value;
-          }
-        }
+        fullPath += path;
+        console.log(fullPath);
+        var headers = makeApiHeaders(method, timestamp, fullPath, params, body);
+        console.log(headers);
 
         $http({
-          "method": "GET",
-          "url": $scope.apiSettings.apiUrl,
-          "params": params
+          "method" : method,
+          "url" : fullPath + (queryString.length > 0 ? '?' + queryString : ""),
+          "headers" : headers
         }).
           success(onSuccess).
           error(onError);
       }
 
+      var getEnvId = function() {
+        if ($scope.apiSettings.envId.length == 0) {
+          return "0";
+        }
+        return $scope.apiSettings.envId;
+      }
+
       // Load the user's farms and the roles it has access to
       $scope.getFarmsAndRoles = function() {
-        makeApiCall('FarmsList', [],
+        makeApiCall('GET', "/api/v1beta0/user/"+getEnvId()+"/images/", [], "",
           function(data, status, headers, config) {
             data = xml2json.parser(data);
             // TODO : Error management
@@ -153,7 +133,7 @@ var app = angular.module('ScalrFarmMigrator', ["LocalStorageModule", "ui.bootstr
           function(data, status, headers, config) {
             // TODO : Error management
           });
-        makeApiCall('RolesList', [],
+        makeApiCall('GET', "/api/v1beta0/user/"+getEnvId()+"/roles/", [], "",
           function(data, status, headers, config) {
             data = xml2json.parser(data);
             // TODO : Error management
